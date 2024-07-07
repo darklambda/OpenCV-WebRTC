@@ -1,0 +1,4 @@
+websockets
+aiortc
+cv2
+av
