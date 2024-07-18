@@ -1,4 +1,5 @@
 websockets
 aiortc
-cv2
+numpy
+opencv-python-headless
 av

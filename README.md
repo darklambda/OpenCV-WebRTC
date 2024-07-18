@@ -11,7 +11,7 @@
 
 ### Running with dockers
 * Run ``docker build -t webrtc .``
-* Run ``docker run -d -p 8764:8764 fastapi``
+* Run ``docker run -d -p 8764:8764 webrtc``
 
 
 
