@@ -1,4 +1,4 @@
-## Running the fastapi instance
+## Running the Websocket Server
 
 ### Pre-requisites
 * Docker

@@ -4,7 +4,7 @@ import asyncio
 import json
 import signal
 from websockets import server, WebSocketServerProtocol, ConnectionClosedOK
-from aiortc import RTCPeerConnection, RTCSessionDescription
+from aiortc import RTCPeerConnection, RTCSessionDescription, RTCIceServer, RTCConfiguration
 from aiortc.contrib.media import MediaRelay
 
 from VideoTransform.transform import VideoTransformTrack
@@ -23,7 +23,11 @@ async def create_peer(request: dict, websocket: WebSocketServerProtocol):
 
     offer = RTCSessionDescription(sdp=request["sdp"], type=request["type"])
 
-    pc = RTCPeerConnection()
+    ice_servers = [
+        RTCIceServer(urls="stun:stun.l.google.com:19302")  # Google's public STUN server
+    ]
+
+    pc = RTCPeerConnection(RTCConfiguration(iceServers=ice_servers))
 
     # Change to websocket ipadress
     print("-"*70)
@@ -38,9 +42,11 @@ async def create_peer(request: dict, websocket: WebSocketServerProtocol):
         global peerCreated
         print("Connection state is {0}.".format(str(pc.connectionState)))
         if pc.connectionState == "failed":
+            print("Connection Stats".center(70, "-"))
             stats = await pc.getStats()
             print(stats)
             await pc.close()
+            print("-"*70)
             peerCreated = False
         elif pc.connectionState == "closed":
             peerCreated = False
