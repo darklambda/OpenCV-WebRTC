@@ -24,7 +24,10 @@ async def create_peer(request: dict, websocket: WebSocketServerProtocol):
     offer = RTCSessionDescription(sdp=request["sdp"], type=request["type"])
 
     ice_servers = [
-        RTCIceServer(urls="stun:stun.l.google.com:19302")  # Google's public STUN server
+        RTCIceServer(urls="stun:stun.l.google.com:19302"),  # Google's public STUN server
+        RTCIceServer(urls="turn:turn.anyfirewall.com:443?transport=tcp",
+                     username="webrtc",
+                     credential="webrtc")
     ]
 
     pc = RTCPeerConnection(RTCConfiguration(iceServers=ice_servers))
@@ -54,6 +57,7 @@ async def create_peer(request: dict, websocket: WebSocketServerProtocol):
     @pc.on("iceconnectionstatechange")
     async def on_iceconnectionstatechange():
         print("ICE Connection state is {0}.".format(str(pc.iceConnectionState)))
+
 
     @pc.on("icegatheringstatechange")
     async def on_icegatheringstatechange():
