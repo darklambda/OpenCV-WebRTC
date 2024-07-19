@@ -39,9 +39,9 @@ async def create_peer(request: dict, websocket: WebSocketServerProtocol):
 
     ice_servers = [
         RTCIceServer(urls = os.environ.get('STUN_SV_URL')),  # Google's public STUN server
-        RTCIceServer(urls = os.environ.get('TURN_SV_URL'),
-                     username = os.environ.get('TURN_SV_USER'),
-                     credential = os.environ.get('TURN_SV_PASSWORD'))
+        #RTCIceServer(urls = os.environ.get('TURN_SV_URL'),
+        #             username = os.environ.get('TURN_SV_USER'),
+        #             credential = os.environ.get('TURN_SV_PASSWORD'))
     ]
 
     print("Creating RTC Peer")
@@ -93,11 +93,15 @@ async def create_peer(request: dict, websocket: WebSocketServerProtocol):
     print("Creating Answer")
     answer = await pc.createAnswer()
     print("Setting Local Description")
-    await pc.setLocalDescription(answer)
+    try:
+        await pc.setLocalDescription(answer)
+    except Exception as error:
+        print(error)
+        pass
     await websocket.send(json.dumps(
             {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}
         ))
-    await websocket.close()
+    await websocket.close(reason='WebRTC Connection Successfull')
 
 
 async def connection_handler(websocket: WebSocketServerProtocol):
@@ -109,14 +113,17 @@ async def connection_handler(websocket: WebSocketServerProtocol):
         while True:
             index = connections.index(websocket)
             if (index == 0) and (not peerCreated):
-                await websocket.send("1-")
+                await websocket.send("2-")
                 rqs = await websocket.recv()
                 rqs = json.loads(rqs)
                 await create_peer(rqs, websocket)
             else:
-                await websocket.send("2-" + str(index))
+                await websocket.send("1-" + str(index))
                 await asyncio.sleep(1)
     except ConnectionClosedOK:
+        connections.remove(websocket)
+    except Exception as error:
+        print(error)
         connections.remove(websocket)
 
 async def main():
