@@ -1,3 +1,5 @@
 /app/client.py
 __pycache__
 *.tar
+*.txt
+.env

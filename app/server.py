@@ -2,12 +2,19 @@
 
 import asyncio
 import json
+import os
 import signal
-from websockets import server, WebSocketServerProtocol, ConnectionClosedOK
+
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCIceServer, RTCConfiguration
 from aiortc.contrib.media import MediaRelay
+from dotenv import load_dotenv
+from websockets import server, WebSocketServerProtocol, ConnectionClosedOK
+from os.path import join, dirname
 
 from VideoTransform.transform import VideoTransformTrack
+
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
 connections: list[WebSocketServerProtocol] = list()
 
@@ -21,24 +28,24 @@ async def create_peer(request: dict, websocket: WebSocketServerProtocol):
     global peerCreated
     peerCreated = True
 
+    print("-"*70)
+    if "X-Forwarded-For" in websocket.request_headers.keys():
+        print("Creating Peer for {0}".format(str(websocket.request_headers["X-Forwarded-For"])))
+    else:
+        print("Creating Peer for {0}".format(str(websocket.remote_address[0])))
+
+    print("Creating Offer")
     offer = RTCSessionDescription(sdp=request["sdp"], type=request["type"])
 
     ice_servers = [
-        RTCIceServer(urls="stun:stun.l.google.com:19302"),  # Google's public STUN server
-        RTCIceServer(urls="turn:turn.anyfirewall.com:443?transport=tcp",
-                     username="webrtc",
-                     credential="webrtc")
+        RTCIceServer(urls = os.environ.get('STUN_SV_URL')),  # Google's public STUN server
+        RTCIceServer(urls = os.environ.get('TURN_SV_URL'),
+                     username = os.environ.get('TURN_SV_USER'),
+                     credential = os.environ.get('TURN_SV_PASSWORD'))
     ]
 
+    print("Creating RTC Peer")
     pc = RTCPeerConnection(RTCConfiguration(iceServers=ice_servers))
-
-    # Change to websocket ipadress
-    print("-"*70)
-
-    if "X-Forwarded-For" in websocket.request_headers.keys():
-        print("Created for {0}".format(str(websocket.request_headers["X-Forwarded-For"])))
-    else:
-        print("Created for {0}".format(str(websocket.remote_address[0])))
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
@@ -80,11 +87,12 @@ async def create_peer(request: dict, websocket: WebSocketServerProtocol):
             print("Track {0} ended, closing connection.".format(str(track.kind)))
             print("-"*70)
 
-    # handle offer
+    print("Setting Remote Description")
     await pc.setRemoteDescription(offer)
 
-    # send answer
+    print("Creating Answer")
     answer = await pc.createAnswer()
+    print("Setting Local Description")
     await pc.setLocalDescription(answer)
     await websocket.send(json.dumps(
             {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}
