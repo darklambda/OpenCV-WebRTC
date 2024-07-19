@@ -11,7 +11,7 @@
 
 ### Running with dockers
 * Run ``docker build -t webrtc .``
-* Run ``docker run -d -p 8764:8764 webrtc``
+* Run ``docker run -d --network host webrtc``
 
 ### Notes
 This repo is originally based on the [aiortc server example](https://github.com/aiortc/aiortc/tree/main/examples/server).
